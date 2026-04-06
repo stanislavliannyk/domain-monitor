@@ -24,7 +24,7 @@ services:
     container_name: dm_nginx
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${APP_PORT:-8080}:80"
     volumes:
       - .:/var/www/html:cached
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -46,7 +46,7 @@ services:
     volumes:
       - dm_mysql_data:/var/lib/mysql
     ports:
-      - "33060:3306"
+      - "${DB_EXTERNAL_PORT:-33060}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "domain_monitor", "-psecret"]
       interval: 5s
@@ -78,7 +78,6 @@ services:
       dockerfile: docker/php/Dockerfile
     container_name: dm_scheduler
     restart: unless-stopped
-    # Simulates cron: runs `schedule:run` every minute
     command: >
       sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
     volumes:
@@ -89,14 +88,14 @@ services:
     networks:
       - dm_network
 
-  # ── Mailpit (local SMTP + web UI) ────────────────────────────────────────────
+  # ── Mailpit (локальный SMTP + веб-интерфейс для просмотра писем) ─────────────
   mailpit:
     image: axllent/mailpit:latest
     container_name: dm_mailpit
     restart: unless-stopped
     ports:
-      - "8026:8025"   # Web UI  →  http://localhost:8026
-      - "1026:1025"   # SMTP
+      - "${MAILPIT_UI_PORT:-8025}:8025"    # Веб-интерфейс
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"  # SMTP
     networks:
       - dm_network
 
