@@ -25,9 +25,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Копируем только composer.json/composer.lock для кэширования слоя зависимостей.
-# --no-scripts предотвращает запуск post-autoload-dump (php artisan package:discover),
-# который падает потому что код приложения ещё не скопирован на этом шаге.
+# ШАГ 1: только composer-манифест → кэшируемый слой зависимостей.
+# --no-scripts: не запускать post-autoload-dump (php artisan package:discover),
+# который упадёт, пока код приложения ещё не скопирован.
 COPY composer.json composer.lock* ./
 
 RUN composer install \
@@ -38,13 +38,13 @@ RUN composer install \
     --prefer-dist \
     --optimize-autoloader
 
-# Копируем весь код приложения
+# ШАГ 2: весь код приложения
 COPY . .
 
-# Запускаем post-install скрипты теперь, когда весь код на месте,
-# и выставляем права на директории Laravel
-RUN php artisan package:discover --ansi \
-    && chown -R www-data:www-data /var/www/html/storage \
+# ШАГ 3: права на директории Laravel.
+# package:discover запускается автоматически при первом старте приложения —
+# в образе его запускать не нужно (требует APP_KEY и рабочий .env).
+RUN chown -R www-data:www-data /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/bootstrap/cache
 
 EXPOSE 9000
