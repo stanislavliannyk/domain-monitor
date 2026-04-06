@@ -1,15 +1,14 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-| Each module owns its own routes file. This file simply includes them.
-| The order matters: Auth first so the 'login' named route exists before
-| other modules reference it via the 'auth' middleware redirect.
+| The entire frontend is a Vue 3 SPA. This single catch-all route serves
+| the app shell; Vue Router takes over all client-side navigation.
 |--------------------------------------------------------------------------
 */
 
-require app_path('Modules/Auth/routes.php');
-require app_path('Modules/Dashboard/routes.php');
-require app_path('Modules/Domain/routes.php');
+Route::get('/{any}', fn () => view('app'))->where('any', '.*');
