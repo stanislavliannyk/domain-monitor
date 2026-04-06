@@ -1,14 +1,5 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| API-маршруты
-|--------------------------------------------------------------------------
-| Каждый модуль хранит свои маршруты в api_routes.php.
-| Этот файл только агрегирует их.
-|--------------------------------------------------------------------------
-*/
-
-require app_path('Modules/Auth/api_routes.php');
-require app_path('Modules/Dashboard/api_routes.php');
-require app_path('Modules/Domain/api_routes.php');
+require app_path('Modules/Auth/routes/api.php');
+require app_path('Modules/Dashboard/routes/api.php');
+require app_path('Modules/Domain/routes/api.php');

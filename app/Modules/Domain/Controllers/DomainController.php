@@ -6,89 +6,114 @@ use App\Http\Controllers\Controller;
 use App\Modules\Domain\Models\Domain;
 use App\Modules\Domain\Requests\StoreDomainRequest;
 use App\Modules\Domain\Requests\UpdateDomainRequest;
-use App\Modules\Monitoring\Jobs\CheckDomainJob;
-use Illuminate\Http\RedirectResponse;
+use App\Modules\Domain\Services\DomainService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class DomainController extends Controller
 {
-    public function index(Request $request): View
-    {
-        $domains = $request->user()
-            ->domains()
-            ->orderBy('name')
-            ->paginate(15);
+    public function __construct(private readonly DomainService $service) {}
 
-        return view('domains.index', compact('domains'));
+    public function index(Request $request): JsonResponse
+    {
+        $domains = $this->service->paginate($request->user());
+
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return response()->json([
+            'data' => $domains->items(),
+            'meta' => [
+                'current_page' => $domains->currentPage(),
+                'last_page'    => $domains->lastPage(),
+                'from'         => $domains->firstItem(),
+                'to'           => $domains->lastItem(),
+                'total'        => $domains->total(),
+            ],
+        ]);
     }
 
-    public function create(): View
+    public function store(StoreDomainRequest $request): JsonResponse
     {
-        return view('domains.create');
+        $domain = $this->service->create($request->user(), $request->validated());
+
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return $this->success($domain, 201);
     }
 
-    public function store(StoreDomainRequest $request): RedirectResponse
-    {
-        $domain = $request->user()->domains()->create($request->validated());
-
-        CheckDomainJob::dispatch($domain);
-
-        return redirect()
-            ->route('domains.show', $domain)
-            ->with('success', 'Domain added. First check has been dispatched.');
-    }
-
-    public function show(Domain $domain): View
+    public function show(Domain $domain): JsonResponse
     {
         $this->authorize('view', $domain);
 
-        $logs = $domain->checkLogs()
-            ->latest('checked_at')
-            ->paginate(30);
+        $data = $this->service->get($domain);
 
-        $stats = [
-            'uptime_7d'       => $domain->uptimePercentage(7),
-            'avg_response_7d' => $domain->averageResponseTime(7),
-        ];
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
 
-        return view('domains.show', compact('domain', 'logs', 'stats'));
+        return $this->success($data);
     }
 
-    public function edit(Domain $domain): View
+    public function update(UpdateDomainRequest $request, Domain $domain): JsonResponse
     {
-        $this->authorize('update', $domain);
+        $updated = $this->service->update($domain, $request->validated());
 
-        return view('domains.edit', compact('domain'));
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return $this->success($updated);
     }
 
-    public function update(UpdateDomainRequest $request, Domain $domain): RedirectResponse
-    {
-        $domain->update($request->validated());
-
-        return redirect()
-            ->route('domains.show', $domain)
-            ->with('success', 'Domain updated successfully.');
-    }
-
-    public function destroy(Domain $domain): RedirectResponse
+    public function destroy(Domain $domain): JsonResponse
     {
         $this->authorize('delete', $domain);
 
-        $domain->delete();
+        $this->service->delete($domain);
 
-        return redirect()
-            ->route('domains.index')
-            ->with('success', 'Domain deleted.');
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return response()->json(['message' => 'Домен удалён.']);
     }
 
-    /** Manually trigger an immediate check for this domain. */
-    public function checkNow(Domain $domain): RedirectResponse
+    public function checkNow(Domain $domain): JsonResponse
     {
         $this->authorize('update', $domain);
 
-        CheckDomainJob::dispatch($domain);
+        $this->service->scheduleCheck($domain);
 
-        return back()->with('success', 'Check job dispatched. Results will appear shortly.');
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return response()->json(['message' => 'Проверка поставлена в очередь.']);
+    }
+
+    public function logs(Domain $domain, Request $request): JsonResponse
+    {
+        $this->authorize('view', $domain);
+
+        $logs = $this->service->paginateLogs($domain);
+
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
+
+        return response()->json([
+            'data' => $logs->items(),
+            'meta' => [
+                'current_page' => $logs->currentPage(),
+                'last_page'    => $logs->lastPage(),
+                'from'         => $logs->firstItem(),
+                'to'           => $logs->lastItem(),
+                'total'        => $logs->total(),
+            ],
+        ]);
     }
 }

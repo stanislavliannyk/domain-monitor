@@ -34,7 +34,7 @@ class DomainStatusChanged extends Notification implements ShouldQueue
             ->line($this->result->httpCode
                 ? "HTTP-код ответа: {$this->result->httpCode}"
                 : "Ошибка: {$this->result->errorMessage}")
-            ->action('Открыть в Мониторе доменов', route('domains.show', $this->domain))
+            ->action('Открыть в Мониторе доменов', config('app.url') . '/domains/' . $this->domain->id)
             ->line('Это уведомление отправлено системой мониторинга доменов.');
     }
 

@@ -1,75 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-
-const routes = [
-    // ── Guest ────────────────────────────────────────────────────────────────
-    {
-        path: '/login',
-        name: 'login',
-        component: () => import('@/views/auth/LoginView.vue'),
-        meta: { guest: true },
-    },
-    {
-        path: '/register',
-        name: 'register',
-        component: () => import('@/views/auth/RegisterView.vue'),
-        meta: { guest: true },
-    },
-
-    // ── Authenticated ─────────────────────────────────────────────────────────
-    {
-        path: '/',
-        redirect: { name: 'dashboard' },
-    },
-    {
-        path: '/dashboard',
-        name: 'dashboard',
-        component: () => import('@/views/DashboardView.vue'),
-        meta: { auth: true },
-    },
-    {
-        path: '/domains',
-        name: 'domains.index',
-        component: () => import('@/views/domains/DomainIndexView.vue'),
-        meta: { auth: true },
-    },
-    {
-        path: '/domains/create',
-        name: 'domains.create',
-        component: () => import('@/views/domains/DomainCreateView.vue'),
-        meta: { auth: true },
-    },
-    {
-        path: '/domains/:id',
-        name: 'domains.show',
-        component: () => import('@/views/domains/DomainShowView.vue'),
-        meta: { auth: true },
-    },
-    {
-        path: '/domains/:id/edit',
-        name: 'domains.edit',
-        component: () => import('@/views/domains/DomainEditView.vue'),
-        meta: { auth: true },
-    },
-
-    // ── 404 ──────────────────────────────────────────────────────────────────
-    {
-        path: '/:pathMatch(.*)*',
-        name: 'not-found',
-        component: () => import('@/views/NotFoundView.vue'),
-    },
-]
+import { useAuthStore } from '@/modules/auth/store'
+import authRoutes from '@/modules/auth/routes'
+import dashboardRoutes from '@/modules/dashboard/routes'
+import domainRoutes from '@/modules/domain/routes'
 
 const router = createRouter({
     history: createWebHistory(),
-    routes,
+    routes: [
+        ...authRoutes,
+        ...dashboardRoutes,
+        ...domainRoutes,
+        {
+            path: '/:pathMatch(.*)*',
+            name: 'not-found',
+            component: () => import('@/shared/views/NotFoundView.vue'),
+        },
+    ],
     scrollBehavior: () => ({ top: 0 }),
 })
 
 router.beforeEach(async (to) => {
     const auth = useAuthStore()
 
-    // Resolve current user once on first navigation
     if (!auth.initialized) {
         await auth.fetchUser()
     }

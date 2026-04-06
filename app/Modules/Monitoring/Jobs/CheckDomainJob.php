@@ -15,13 +15,10 @@ class CheckDomainJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Максимальное количество попыток выполнения задачи. */
     public int $tries = 2;
 
-    /** Задержка между повторными попытками (секунды). */
     public int $backoff = 30;
 
-    /** Уникальный ключ предотвращает дублирующиеся одновременные задачи для одного домена. */
     public function uniqueId(): string
     {
         return 'domain:' . $this->domain->id;
@@ -39,11 +36,19 @@ class CheckDomainJob implements ShouldQueue
 
         $result = $monitorService->run($this->domain);
 
+        if ($monitorService->getError()) {
+            Log::error('Мониторинг завершился с ошибкой', [
+                'id'     => $this->domain->id,
+                'ошибка' => $monitorService->getError(),
+            ]);
+            return;
+        }
+
         Log::info('Проверка завершена', [
-            'id'               => $this->domain->id,
-            'доступен'         => $result->isUp,
-            'http_код'         => $result->httpCode,
-            'время_ответа_мс'  => $result->responseTimeMs,
+            'id'              => $this->domain->id,
+            'доступен'        => $result->isUp,
+            'http_код'        => $result->httpCode,
+            'время_ответа_мс' => $result->responseTimeMs,
         ]);
     }
 

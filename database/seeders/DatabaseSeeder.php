@@ -10,10 +10,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::factory()->create([
-            'name'  => 'Администратор',
-            'email' => 'admin@example.com',
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name'     => 'Администратор',
+                'password' => bcrypt('password'),
+            ]
+        );
 
         $domains = [
             ['name' => 'Google',  'url' => 'https://google.com'],

@@ -3,29 +3,22 @@
 namespace App\Modules\Dashboard\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Monitoring\Models\CheckLog;
+use App\Modules\Dashboard\Services\DashboardService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __construct(private readonly DashboardService $service) {}
+
+    public function __invoke(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $data = $this->service->getData($request->user());
 
-        $domains = $user->domains()
-            ->withCount(['checkLogs as total_checks'])
-            ->with('checkLogs', fn ($q) => $q->latest('checked_at')->limit(1))
-            ->orderBy('name')
-            ->get();
+        if ($this->service->getError()) {
+            return $this->error($this->service->getError());
+        }
 
-        $stats = [
-            'total'   => $domains->count(),
-            'up'      => $domains->where('status', 'up')->count(),
-            'down'    => $domains->where('status', 'down')->count(),
-            'unknown' => $domains->where('status', 'unknown')->count(),
-        ];
-
-        return view('dashboard', compact('domains', 'stats'));
+        return $this->success($data);
     }
 }

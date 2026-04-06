@@ -2,13 +2,13 @@
 
 namespace App\Modules\Monitoring\DTOs;
 
-final class CheckResult
+final readonly class CheckResult
 {
     public function __construct(
-        public readonly bool    $isUp,
-        public readonly ?int    $httpCode,
-        public readonly ?int    $responseTimeMs,
-        public readonly ?string $errorMessage,
+        public bool    $isUp,
+        public ?int    $httpCode,
+        public ?int    $responseTimeMs,
+        public ?string $errorMessage,
     ) {}
 
     public static function success(int $httpCode, int $responseTimeMs): self

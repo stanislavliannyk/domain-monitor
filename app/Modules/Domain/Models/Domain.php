@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 
 class Domain extends Model
 {
@@ -32,10 +31,6 @@ class Domain extends Model
         'last_checked_at'   => 'datetime',
     ];
 
-    // -------------------------------------------------------------------------
-    // Relationships
-    // -------------------------------------------------------------------------
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -45,10 +40,6 @@ class Domain extends Model
     {
         return $this->hasMany(CheckLog::class);
     }
-
-    // -------------------------------------------------------------------------
-    // Scopes
-    // -------------------------------------------------------------------------
 
     public function scopeActive(Builder $query): void
     {
@@ -62,27 +53,6 @@ class Domain extends Model
             $q->whereNull('last_checked_at')
               ->orWhereRaw('DATE_ADD(last_checked_at, INTERVAL check_interval MINUTE) <= NOW()');
         });
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    public function isUp(): bool
-    {
-        return $this->status === 'up';
-    }
-
-    public function isDown(): bool
-    {
-        return $this->status === 'down';
-    }
-
-    public function nextCheckAt(): ?Carbon
-    {
-        return $this->last_checked_at
-            ? $this->last_checked_at->addMinutes($this->check_interval)
-            : now();
     }
 
     public function uptimePercentage(int $days = 7): float

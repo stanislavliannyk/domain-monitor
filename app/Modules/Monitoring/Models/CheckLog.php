@@ -29,15 +29,4 @@ class CheckLog extends Model
         return $this->belongsTo(Domain::class);
     }
 
-    public function statusLabel(): string
-    {
-        return $this->is_up ? 'UP' : 'DOWN';
-    }
-
-    public function responseTimeSec(): ?string
-    {
-        return $this->response_time_ms !== null
-            ? number_format($this->response_time_ms / 1000, 3) . 's'
-            : null;
-    }
 }

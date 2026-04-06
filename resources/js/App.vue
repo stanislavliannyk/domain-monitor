@@ -4,5 +4,5 @@
 </template>
 
 <script setup>
-import FlashMessages from '@/components/FlashMessages.vue'
+import FlashMessages from '@/shared/components/FlashMessages.vue'
 </script>

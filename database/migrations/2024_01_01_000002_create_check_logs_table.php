@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedInteger('response_time_ms')->nullable()->comment('Время ответа в миллисекундах');
             $table->text('error_message')->nullable()->comment('Сообщение об ошибке, если проверка не прошла');
 
-            // Составной индекс для быстрой выборки истории по домену
             $table->index(['domain_id', 'checked_at']);
         });
     }

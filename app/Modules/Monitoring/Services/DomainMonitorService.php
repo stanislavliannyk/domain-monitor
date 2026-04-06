@@ -7,30 +7,43 @@ use App\Modules\Monitoring\DTOs\CheckResult;
 use App\Modules\Monitoring\Models\CheckLog;
 use App\Modules\Monitoring\Notifications\AnonymousNotifiable;
 use App\Modules\Monitoring\Notifications\DomainStatusChanged;
+use App\Traits\HasServiceError;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DomainMonitorService
 {
+    use HasServiceError;
+
     public function __construct(
         private readonly DomainCheckService $checker,
     ) {}
 
-    public function run(Domain $domain): CheckResult
+    public function run(Domain $domain): ?CheckResult
     {
-        // Сохраняем предыдущий статус до обновления
-        $previousStatus = $domain->status;
+        $this->clearError();
 
-        $result = $this->checker->check($domain);
+        try {
+            $previousStatus = $domain->status;
 
-        DB::transaction(function () use ($domain, $result) {
-            $this->saveLog($domain, $result);
-            $this->updateStatus($domain, $result);
-        });
+            $result = $this->checker->check($domain);
 
-        $this->notifyIfStatusChanged($domain, $result, $previousStatus);
+            DB::transaction(function () use ($domain, $result) {
+                $this->saveLog($domain, $result);
+                $this->updateStatus($domain, $result);
+            });
 
-        return $result;
+            $this->notifyIfStatusChanged($domain, $result, $previousStatus);
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::error('Ошибка при выполнении мониторинга домена', [
+                'domain_id' => $domain->id,
+                'ошибка'    => $e->getMessage(),
+            ]);
+            $this->setError('Ошибка мониторинга домена.');
+            return null;
+        }
     }
 
     private function saveLog(Domain $domain, CheckResult $result): void
@@ -53,10 +66,6 @@ class DomainMonitorService
         ]);
     }
 
-    /**
-     * Отправляем уведомление только при смене статуса на «down»,
-     * а не при каждой неудачной проверке.
-     */
     private function notifyIfStatusChanged(Domain $domain, CheckResult $result, string $previousStatus): void
     {
         if (! $domain->notify_on_failure) {

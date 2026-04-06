@@ -15,23 +15,19 @@ return new class extends Migration
             $table->string('name')->comment('Читаемое название домена');
             $table->string('url')->comment('Полный URL, включая схему, например https://example.com');
 
-            // Настройки проверок
             $table->unsignedSmallInteger('check_interval')->default(5)->comment('Интервал между проверками в минутах');
             $table->unsignedSmallInteger('request_timeout')->default(10)->comment('Таймаут HTTP-запроса в секундах');
             $table->enum('check_method', ['GET', 'HEAD'])->default('HEAD');
 
-            // Состояние
             $table->boolean('is_active')->default(true)->index();
             $table->enum('status', ['unknown', 'up', 'down'])->default('unknown')->index();
             $table->timestamp('last_checked_at')->nullable()->index();
 
-            // Уведомления
             $table->boolean('notify_on_failure')->default(false);
             $table->string('notification_email')->nullable();
 
             $table->timestamps();
 
-            // Индексы для ускорения типичных запросов
             $table->index(['user_id', 'is_active']);
             $table->index(['is_active', 'last_checked_at']);
         });

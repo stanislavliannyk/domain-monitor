@@ -30,7 +30,6 @@ class DomainCheckService
             $response = $client->request($domain->check_method, $domain->url);
             $httpCode = $response->getStatusCode();
 
-            // 2xx и 3xx считаем доступными; 4xx/5xx — недоступными
             if ($httpCode >= 200 && $httpCode < 400) {
                 return CheckResult::success($httpCode, $transferTime ?? 0);
             }
