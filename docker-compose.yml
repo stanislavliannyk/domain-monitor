@@ -73,19 +73,21 @@ services:
         condition: service_healthy
     entrypoint: >
       sh -c "
+        entrypoint.sh echo ok &&
+
         if [ ! -f .env ]; then
           cp .env.example .env
           echo 'Создан .env из .env.example'
-        fi
+        fi &&
 
         if ! grep -q '^APP_KEY=.\+' .env; then
           php artisan key:generate --ansi
           echo 'APP_KEY сгенерирован'
         else
           echo 'APP_KEY уже задан'
-        fi
+        fi &&
 
-        php artisan migrate --force --ansi
+        php artisan migrate --force --ansi &&
         echo 'Инициализация завершена'
       "
     networks:

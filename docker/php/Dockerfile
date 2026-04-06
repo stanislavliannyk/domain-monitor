@@ -25,9 +25,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# ШАГ 1: только composer-манифест → кэшируемый слой зависимостей.
-# --no-scripts: не запускать post-autoload-dump (php artisan package:discover),
-# который упадёт, пока код приложения ещё не скопирован.
+# ШАГ 1: зависимости (кэшируемый слой)
+# --no-scripts: не запускать post-autoload-dump — код приложения ещё не скопирован
 COPY composer.json composer.lock* ./
 
 RUN composer install \
@@ -41,12 +40,12 @@ RUN composer install \
 # ШАГ 2: весь код приложения
 COPY . .
 
-# ШАГ 3: права на директории Laravel.
-# package:discover запускается автоматически при первом старте приложения —
-# в образе его запускать не нужно (требует APP_KEY и рабочий .env).
-RUN chown -R www-data:www-data /var/www/html/storage \
-    && chown -R www-data:www-data /var/www/html/bootstrap/cache
+# ШАГ 3: entrypoint — права выставляются при каждом старте контейнера,
+# а не здесь, потому что bind-mount хоста перекрывает права из образа
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["php-fpm"]
