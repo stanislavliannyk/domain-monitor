@@ -25,17 +25,17 @@ class DomainStatusChanged extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $statusLabel = $this->result->isUp ? 'recovered (UP)' : 'went DOWN';
+        $statusLabel = $this->result->isUp ? 'восстановлен (РАБОТАЕТ)' : 'недоступен (DOWN)';
 
         return (new MailMessage)
-            ->subject("[Domain Monitor] {$this->domain->name} {$statusLabel}")
-            ->greeting("Alert: {$this->domain->name}")
-            ->line("Your domain **{$this->domain->url}** has {$statusLabel}.")
+            ->subject("[Монитор доменов] {$this->domain->name} — {$statusLabel}")
+            ->greeting("Оповещение: {$this->domain->name}")
+            ->line("Домен **{$this->domain->url}** стал {$statusLabel}.")
             ->line($this->result->httpCode
-                ? "HTTP status code: {$this->result->httpCode}"
-                : "Error: {$this->result->errorMessage}")
-            ->action('View Details', route('domains.show', $this->domain))
-            ->line('This notification was sent by Domain Monitor.');
+                ? "HTTP-код ответа: {$this->result->httpCode}"
+                : "Ошибка: {$this->result->errorMessage}")
+            ->action('Открыть в Мониторе доменов', route('domains.show', $this->domain))
+            ->line('Это уведомление отправлено системой мониторинга доменов.');
     }
 
     public function toArray(object $notifiable): array

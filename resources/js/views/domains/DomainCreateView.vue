@@ -7,14 +7,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                     </svg>
                 </RouterLink>
-                <h1 class="text-2xl font-bold text-gray-900">Add Domain</h1>
+                <h1 class="text-2xl font-bold text-gray-900">Добавить домен</h1>
             </div>
 
             <div class="card p-6">
                 <DomainForm
                     :errors="errors"
                     :loading="loading"
-                    submit-label="Add Domain"
+                    submit-label="Добавить домен"
                     @submit="handleSubmit"
                     @cancel="router.push({ name: 'domains.index' })"
                 />
@@ -43,7 +43,7 @@ async function handleSubmit(form) {
     loading.value = true
     try {
         const { data } = await domainsApi.create(form)
-        flash.success('Domain added. First check dispatched.')
+        flash.success('Домен добавлен. Первая проверка поставлена в очередь.')
         router.push({ name: 'domains.show', params: { id: data.data.id } })
     } catch (err) {
         handleError(err)

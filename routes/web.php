@@ -4,10 +4,10 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Веб-маршруты
 |--------------------------------------------------------------------------
-| The entire frontend is a Vue 3 SPA. This single catch-all route serves
-| the app shell; Vue Router takes over all client-side navigation.
+| Весь фронтенд — Vue 3 SPA. Единственный catch-all маршрут отдаёт
+| оболочку приложения; Vue Router берёт на себя всю клиентскую навигацию.
 |--------------------------------------------------------------------------
 */
 

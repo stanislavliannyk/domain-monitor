@@ -3,10 +3,10 @@
 use Illuminate\Support\Facades\Schedule;
 
 /*
- * The scheduler runs `domains:check` every minute.
- * The command is registered by MonitoringServiceProvider.
- * The command itself determines which domains are actually due,
- * so running it every minute is safe and adds no significant overhead.
+ * Планировщик запускает `domains:check` каждую минуту.
+ * Команда сама определяет, какие домены нуждаются в проверке,
+ * поэтому запуск каждую минуту безопасен и не создаёт лишней нагрузки.
+ * Команда регистрируется через MonitoringServiceProvider.
  */
 Schedule::command('domains:check')
     ->everyMinute()

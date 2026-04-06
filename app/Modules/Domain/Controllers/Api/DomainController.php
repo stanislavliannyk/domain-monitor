@@ -26,6 +26,7 @@ class DomainController extends Controller
     {
         $domain = $request->user()->domains()->create($request->validated());
 
+        // Сразу ставим первую проверку в очередь
         CheckDomainJob::dispatch($domain);
 
         return response()->json(['data' => $domain], 201);
@@ -34,10 +35,6 @@ class DomainController extends Controller
     public function show(Domain $domain): JsonResponse
     {
         $this->authorize('view', $domain);
-
-        $domain->load([
-            'checkLogs' => fn ($q) => $q->latest('checked_at')->limit(1),
-        ]);
 
         return response()->json([
             'data' => array_merge($domain->toArray(), [
@@ -62,7 +59,7 @@ class DomainController extends Controller
 
         $domain->delete();
 
-        return response()->json(['message' => 'Domain deleted.']);
+        return response()->json(['message' => 'Домен удалён.']);
     }
 
     public function checkNow(Domain $domain): JsonResponse
@@ -71,7 +68,7 @@ class DomainController extends Controller
 
         CheckDomainJob::dispatch($domain);
 
-        return response()->json(['message' => 'Check dispatched.']);
+        return response()->json(['message' => 'Проверка поставлена в очередь.']);
     }
 
     public function logs(Domain $domain, Request $request): JsonResponse

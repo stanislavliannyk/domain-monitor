@@ -1,38 +1,38 @@
 <template>
     <GuestLayout>
-        <template #subtitle>Create a new account</template>
+        <template #subtitle>Создайте новую учётную запись</template>
 
         <form @submit.prevent="submit" class="space-y-5">
-            <FormField id="name" label="Full name" :error="errors.name?.[0]" required>
+            <FormField id="name" label="Полное имя" :error="errors.name?.[0]" required>
                 <input id="name" v-model="form.name" type="text" required autofocus
                        :class="['form-input mt-1', errors.name ? 'form-input-error' : '']" />
             </FormField>
 
-            <FormField id="email" label="Email address" :error="errors.email?.[0]" required>
+            <FormField id="email" label="Email" :error="errors.email?.[0]" required>
                 <input id="email" v-model="form.email" type="email" required
                        :class="['form-input mt-1', errors.email ? 'form-input-error' : '']" />
             </FormField>
 
-            <FormField id="password" label="Password" :error="errors.password?.[0]" required>
+            <FormField id="password" label="Пароль" :error="errors.password?.[0]" required>
                 <input id="password" v-model="form.password" type="password" required
                        :class="['form-input mt-1', errors.password ? 'form-input-error' : '']" />
             </FormField>
 
-            <FormField id="password_confirmation" label="Confirm password">
+            <FormField id="password_confirmation" label="Подтверждение пароля">
                 <input id="password_confirmation" v-model="form.password_confirmation"
                        type="password" required class="form-input mt-1" />
             </FormField>
 
             <button type="submit" :disabled="loading" class="btn-primary w-full">
-                <span v-if="loading">Creating account…</span>
-                <span v-else>Create account</span>
+                <span v-if="loading">Создание…</span>
+                <span v-else>Создать учётную запись</span>
             </button>
         </form>
 
         <p class="mt-6 text-center text-sm text-gray-500">
-            Already have an account?
+            Уже есть учётная запись?
             <RouterLink :to="{ name: 'login' }" class="font-medium text-blue-600 hover:text-blue-500">
-                Sign in
+                Войти
             </RouterLink>
         </p>
     </GuestLayout>
@@ -65,7 +65,7 @@ async function submit() {
     } catch (err) {
         handleError(err)
         if (!Object.keys(errors.value).length) {
-            flash.error('Registration failed. Please try again.')
+            flash.error('Ошибка регистрации. Попробуйте снова.')
         }
     } finally {
         loading.value = false

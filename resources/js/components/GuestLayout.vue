@@ -8,7 +8,9 @@
                     />
                 </svg>
             </div>
-            <h2 class="mt-4 text-center text-2xl font-bold tracking-tight text-gray-900">Domain Monitor</h2>
+            <h2 class="mt-4 text-center text-2xl font-bold tracking-tight text-gray-900">
+                Монитор доменов
+            </h2>
             <p class="mt-1 text-center text-sm text-gray-500">
                 <slot name="subtitle" />
             </p>

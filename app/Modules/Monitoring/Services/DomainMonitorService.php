@@ -18,21 +18,22 @@ class DomainMonitorService
 
     public function run(Domain $domain): CheckResult
     {
+        // Сохраняем предыдущий статус до обновления
         $previousStatus = $domain->status;
 
         $result = $this->checker->check($domain);
 
         DB::transaction(function () use ($domain, $result) {
-            $this->persistLog($domain, $result);
-            $this->updateDomainStatus($domain, $result);
+            $this->saveLog($domain, $result);
+            $this->updateStatus($domain, $result);
         });
 
-        $this->dispatchNotificationIfNeeded($domain, $result, $previousStatus);
+        $this->notifyIfStatusChanged($domain, $result, $previousStatus);
 
         return $result;
     }
 
-    private function persistLog(Domain $domain, CheckResult $result): void
+    private function saveLog(Domain $domain, CheckResult $result): void
     {
         CheckLog::create([
             'domain_id'        => $domain->id,
@@ -44,7 +45,7 @@ class DomainMonitorService
         ]);
     }
 
-    private function updateDomainStatus(Domain $domain, CheckResult $result): void
+    private function updateStatus(Domain $domain, CheckResult $result): void
     {
         $domain->update([
             'status'          => $result->isUp ? 'up' : 'down',
@@ -52,16 +53,16 @@ class DomainMonitorService
         ]);
     }
 
-    private function dispatchNotificationIfNeeded(
-        Domain      $domain,
-        CheckResult $result,
-        string      $previousStatus,
-    ): void {
+    /**
+     * Отправляем уведомление только при смене статуса на «down»,
+     * а не при каждой неудачной проверке.
+     */
+    private function notifyIfStatusChanged(Domain $domain, CheckResult $result, string $previousStatus): void
+    {
         if (! $domain->notify_on_failure) {
             return;
         }
 
-        // Notify only on transition to "down"
         if (! $result->isUp && $previousStatus !== 'down') {
             try {
                 $notifiable = $domain->notification_email
@@ -70,9 +71,9 @@ class DomainMonitorService
 
                 $notifiable->notify(new DomainStatusChanged($domain, $result));
             } catch (\Throwable $e) {
-                Log::error('Failed to send domain status notification', [
+                Log::error('Не удалось отправить уведомление об изменении статуса домена', [
                     'domain_id' => $domain->id,
-                    'error'     => $e->getMessage(),
+                    'ошибка'    => $e->getMessage(),
                 ]);
             }
         }

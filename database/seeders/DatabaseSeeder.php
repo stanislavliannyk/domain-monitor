@@ -11,13 +11,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $user = User::factory()->create([
-            'name'  => 'Admin User',
+            'name'  => 'Администратор',
             'email' => 'admin@example.com',
         ]);
 
         $domains = [
-            ['name' => 'Google', 'url' => 'https://google.com'],
-            ['name' => 'GitHub', 'url' => 'https://github.com'],
+            ['name' => 'Google',  'url' => 'https://google.com'],
+            ['name' => 'GitHub',  'url' => 'https://github.com'],
             ['name' => 'Laravel', 'url' => 'https://laravel.com'],
         ];
 

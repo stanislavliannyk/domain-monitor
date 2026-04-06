@@ -1,7 +1,7 @@
 <template>
     <div v-if="meta.last_page > 1" class="flex items-center justify-between px-2">
         <p class="text-sm text-gray-500">
-            Showing {{ meta.from }}–{{ meta.to }} of {{ meta.total }}
+            Показано {{ meta.from }}–{{ meta.to }} из {{ meta.total }}
         </p>
         <div class="flex gap-1">
             <button
@@ -24,10 +24,7 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-    meta: {
-        type: Object,
-        required: true,
-    },
+    meta: { type: Object, required: true },
 })
 
 defineEmits(['change'])

@@ -1,6 +1,6 @@
 <template>
     <AppLayout>
-        <!-- Loading -->
+        <!-- Скелетон загрузки -->
         <div v-if="fetching" class="space-y-6">
             <div class="h-10 w-64 rounded bg-gray-200 animate-pulse" />
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -9,7 +9,7 @@
         </div>
 
         <div v-else-if="domain" class="space-y-6">
-            <!-- Header -->
+            <!-- Заголовок -->
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <RouterLink :to="{ name: 'domains.index' }" class="text-gray-400 hover:text-gray-600">
@@ -31,69 +31,79 @@
 
                 <div class="flex items-center gap-2">
                     <button @click="handleCheckNow" :disabled="checking" class="btn-secondary text-sm">
-                        {{ checking ? 'Dispatching…' : 'Check Now' }}
+                        {{ checking ? 'Запуск…' : 'Проверить сейчас' }}
                     </button>
-                    <RouterLink :to="{ name: 'domains.edit', params: { id: domain.id } }" class="btn-primary text-sm">
-                        Edit
+                    <RouterLink :to="{ name: 'domains.edit', params: { id: domain.id } }"
+                                class="btn-primary text-sm">
+                        Редактировать
                     </RouterLink>
                 </div>
             </div>
 
-            <!-- Stats -->
+            <!-- Статистика -->
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div class="card p-5">
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Uptime (7d)</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Доступность (7 дн.)</p>
                     <p class="mt-1 text-2xl font-bold"
-                       :class="domain.stats.uptime_7d >= 99 ? 'text-green-600' : domain.stats.uptime_7d >= 95 ? 'text-yellow-600' : 'text-red-600'">
+                       :class="domain.stats.uptime_7d >= 99 ? 'text-green-600'
+                             : domain.stats.uptime_7d >= 95 ? 'text-yellow-600'
+                             : 'text-red-600'">
                         {{ domain.stats.uptime_7d.toFixed(1) }}%
                     </p>
                 </div>
                 <div class="card p-5">
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Avg Response (7d)</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Среднее время ответа (7 дн.)</p>
                     <p class="mt-1 text-2xl font-bold text-gray-800">
                         <template v-if="domain.stats.avg_response_7d">
-                            {{ Math.round(domain.stats.avg_response_7d) }}<span class="text-sm font-normal text-gray-400">ms</span>
+                            {{ Math.round(domain.stats.avg_response_7d) }}<span class="text-sm font-normal text-gray-400"> мс</span>
                         </template>
                         <template v-else>—</template>
                     </p>
                 </div>
                 <div class="card p-5">
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Check Interval</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Интервал проверок</p>
                     <p class="mt-1 text-2xl font-bold text-gray-800">
-                        {{ domain.check_interval }}<span class="text-sm font-normal text-gray-400">m</span>
+                        {{ domain.check_interval }}<span class="text-sm font-normal text-gray-400"> мин.</span>
                     </p>
                 </div>
                 <div class="card p-5">
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Last Checked</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Последняя проверка</p>
                     <p class="mt-1 text-lg font-semibold text-gray-800">
-                        {{ domain.last_checked_at ? diffForHumans(domain.last_checked_at) : 'Never' }}
+                        {{ domain.last_checked_at ? diffForHumans(domain.last_checked_at) : 'Никогда' }}
                     </p>
                 </div>
             </div>
 
-            <!-- Config -->
+            <!-- Конфигурация -->
             <div class="card p-5">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Configuration</h2>
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Конфигурация</h2>
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4 text-sm">
-                    <div><dt class="text-gray-400">Method</dt><dd class="font-mono font-medium text-gray-800">{{ domain.check_method }}</dd></div>
-                    <div><dt class="text-gray-400">Timeout</dt><dd class="font-medium text-gray-800">{{ domain.request_timeout }}s</dd></div>
                     <div>
-                        <dt class="text-gray-400">Active</dt>
+                        <dt class="text-gray-400">Метод</dt>
+                        <dd class="font-mono font-medium text-gray-800">{{ domain.check_method }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400">Таймаут</dt>
+                        <dd class="font-medium text-gray-800">{{ domain.request_timeout }} с</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400">Активен</dt>
                         <dd class="font-medium" :class="domain.is_active ? 'text-green-600' : 'text-gray-400'">
-                            {{ domain.is_active ? 'Yes' : 'Paused' }}
+                            {{ domain.is_active ? 'Да' : 'Приостановлен' }}
                         </dd>
                     </div>
-                    <div><dt class="text-gray-400">Notifications</dt>
-                        <dd class="font-medium text-gray-800">{{ domain.notify_on_failure ? 'On' : 'Off' }}</dd>
+                    <div>
+                        <dt class="text-gray-400">Уведомления</dt>
+                        <dd class="font-medium text-gray-800">{{ domain.notify_on_failure ? 'Включены' : 'Отключены' }}</dd>
                     </div>
                 </dl>
             </div>
 
-            <!-- Check history -->
+            <!-- История проверок -->
             <div class="card overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 class="font-semibold text-gray-800">Check History</h2>
-                    <span class="text-xs text-gray-400">Latest first</span>
+                    <h2 class="font-semibold text-gray-800">История проверок</h2>
+                    <span class="text-xs text-gray-400">Сначала новые</span>
                 </div>
 
                 <div v-if="logsLoading" class="p-6 space-y-2">
@@ -101,7 +111,7 @@
                 </div>
 
                 <div v-else-if="logs.length === 0" class="px-6 py-10 text-center text-gray-400 text-sm">
-                    No checks recorded yet.
+                    Проверки ещё не выполнялись.
                 </div>
 
                 <template v-else>
@@ -109,11 +119,11 @@
                         <table class="min-w-full divide-y divide-gray-100">
                             <thead>
                                 <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    <th class="px-6 py-3">Result</th>
-                                    <th class="px-6 py-3">Date / Time</th>
-                                    <th class="px-6 py-3 hidden sm:table-cell">HTTP Code</th>
-                                    <th class="px-6 py-3 hidden sm:table-cell">Response Time</th>
-                                    <th class="px-6 py-3">Error</th>
+                                    <th class="px-6 py-3">Результат</th>
+                                    <th class="px-6 py-3">Дата и время</th>
+                                    <th class="px-6 py-3 hidden sm:table-cell">HTTP-код</th>
+                                    <th class="px-6 py-3 hidden sm:table-cell">Время ответа</th>
+                                    <th class="px-6 py-3">Ошибка</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-50 text-sm">
@@ -134,7 +144,9 @@
                                         <span v-else class="text-gray-300">—</span>
                                     </td>
                                     <td class="px-6 py-3 hidden sm:table-cell text-gray-600">
-                                        {{ log.response_time_ms != null ? (log.response_time_ms / 1000).toFixed(3) + 's' : '—' }}
+                                        {{ log.response_time_ms != null
+                                            ? (log.response_time_ms / 1000).toFixed(3) + ' с'
+                                            : '—' }}
                                     </td>
                                     <td class="px-6 py-3 text-red-600 text-xs max-w-xs truncate">
                                         {{ log.error_message ?? '' }}
@@ -150,10 +162,10 @@
                 </template>
             </div>
 
-            <!-- Danger zone -->
+            <!-- Зона опасности -->
             <div class="rounded-xl border border-red-200 bg-red-50 p-5">
-                <h2 class="text-sm font-semibold text-red-700 mb-3">Danger Zone</h2>
-                <button @click="handleDelete" class="btn-danger text-sm">Delete Domain</button>
+                <h2 class="text-sm font-semibold text-red-700 mb-3">Зона опасности</h2>
+                <button @click="handleDelete" class="btn-danger text-sm">Удалить домен</button>
             </div>
         </div>
     </AppLayout>
@@ -169,24 +181,24 @@ import AppLayout from '@/components/AppLayout.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Pagination from '@/components/Pagination.vue'
 
-const route    = useRoute()
-const router   = useRouter()
-const flash    = useFlashStore()
-const domainId = route.params.id
+const route      = useRoute()
+const router     = useRouter()
+const flash      = useFlashStore()
+const domainId   = route.params.id
 
-const fetching   = ref(true)
-const domain     = ref(null)
-const checking   = ref(false)
+const fetching    = ref(true)
+const domain      = ref(null)
+const checking    = ref(false)
 const logsLoading = ref(true)
-const logs       = ref([])
-const logsMeta   = ref({ current_page: 1, last_page: 1, from: 0, to: 0, total: 0 })
+const logs        = ref([])
+const logsMeta    = ref({ current_page: 1, last_page: 1, from: 0, to: 0, total: 0 })
 
 onMounted(async () => {
     try {
         const { data } = await domainsApi.get(domainId)
         domain.value = data.data
     } catch {
-        flash.error('Domain not found.')
+        flash.error('Домен не найден.')
         return router.push({ name: 'domains.index' })
     } finally {
         fetching.value = false
@@ -202,7 +214,7 @@ async function loadLogs(page = 1) {
         logs.value    = data.data
         logsMeta.value = data.meta
     } catch {
-        flash.error('Failed to load check history.')
+        flash.error('Не удалось загрузить историю проверок.')
     } finally {
         logsLoading.value = false
     }
@@ -212,22 +224,22 @@ async function handleCheckNow() {
     checking.value = true
     try {
         await domainsApi.checkNow(domainId)
-        flash.success('Check dispatched. Results will appear shortly.')
+        flash.success('Проверка поставлена в очередь. Результат появится в ближайшее время.')
     } catch {
-        flash.error('Failed to dispatch check.')
+        flash.error('Не удалось запустить проверку.')
     } finally {
         checking.value = false
     }
 }
 
 async function handleDelete() {
-    if (!confirm(`This will permanently delete "${domain.value.name}" and ALL its check history. Continue?`)) return
+    if (!confirm(`Это действие безвозвратно удалит «${domain.value.name}» и всю историю проверок. Продолжить?`)) return
     try {
         await domainsApi.remove(domainId)
-        flash.success('Domain deleted.')
+        flash.success('Домен удалён.')
         router.push({ name: 'domains.index' })
     } catch {
-        flash.error('Failed to delete domain.')
+        flash.error('Не удалось удалить домен.')
     }
 }
 </script>

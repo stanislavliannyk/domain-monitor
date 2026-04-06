@@ -25,4 +25,16 @@ class UpdateDomainRequest extends FormRequest
             'notification_email' => ['nullable', 'email', 'max:255', 'required_if:notify_on_failure,1'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required'              => 'Поле «Название» обязательно.',
+            'url.required'               => 'Поле «URL» обязательно.',
+            'url.url'                    => 'Введите корректный URL, включая http:// или https://.',
+            'check_method.in'            => 'HTTP-метод должен быть GET или HEAD.',
+            'notification_email.required_if' => 'Укажите email для уведомлений, если они включены.',
+            'notification_email.email'   => 'Введите корректный email для уведомлений.',
+        ];
+    }
 }

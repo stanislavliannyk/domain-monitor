@@ -17,9 +17,9 @@ const props = defineProps({
 })
 
 const map = {
-    up:      { badge: 'bg-green-100 text-green-800', dot: 'bg-green-500', label: 'UP' },
-    down:    { badge: 'bg-red-100 text-red-800',     dot: 'bg-red-500',   label: 'DOWN' },
-    unknown: { badge: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400',  label: 'UNKNOWN' },
+    up:      { badge: 'bg-green-100 text-green-800', dot: 'bg-green-500', label: 'РАБОТАЕТ' },
+    down:    { badge: 'bg-red-100 text-red-800',     dot: 'bg-red-500',   label: 'НЕДОСТУПЕН' },
+    unknown: { badge: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400',  label: 'НЕИЗВЕСТНО' },
 }
 
 const styles = computed(() => map[props.status] ?? map.unknown)

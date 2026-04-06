@@ -1,184 +1,173 @@
-# Domain Monitor
+# Монитор доменов
 
-A production-ready domain uptime monitoring service built with **Laravel 12**, designed to demonstrate Senior/Team Lead engineering practices.
+Система мониторинга доступности доменов на **Laravel 12 + Vue 3**, разработанная как проект уровня Senior / Team Lead.
 
-## Features
+## Возможности
 
-| Category | Detail |
+| Категория | Описание |
 |---|---|
-| **Auth** | Registration, login, logout, rate-limited login, protected routes |
-| **Domains** | CRUD with per-user policy enforcement |
-| **Check settings** | Interval (1–1440 min), timeout (1–60 s), method (HEAD/GET) |
-| **Scheduler** | `domains:check` command dispatched every minute; only runs checks whose interval has elapsed |
-| **Async jobs** | `CheckDomainJob` queued, unique per domain, 2 retries with back-off |
-| **History** | Every check saved with date, HTTP code, response time, error message |
-| **Statistics** | 7-day uptime %, avg response time |
-| **Notifications** ✨ | Email alert on domain going down (status-change only, not every failure) |
-| **Docker** | App, Nginx, MySQL, queue worker, scheduler, Mailpit — all in one `docker-compose up` |
+| **Аутентификация** | Регистрация, вход, выход, rate-limiting, защищённые маршруты |
+| **Домены** | CRUD с проверкой прав владельца через Policy |
+| **Настройки проверок** | Интервал (1–1440 мин.), таймаут (1–60 с), метод (HEAD / GET) |
+| **Планировщик** | Команда `domains:check` запускается каждую минуту; проверяет только те домены, у которых наступило время |
+| **Асинхронные задачи** | `CheckDomainJob` — уникальный per-domain, 2 повтора с задержкой |
+| **История** | Каждая проверка сохраняется: дата, HTTP-код, время ответа, ошибка |
+| **Статистика** | Доступность за 7 дней (%), среднее время ответа |
+| **Уведомления** ✨ | Email при переходе домена в статус «недоступен» (только при смене статуса) |
+| **Docker** | app, Nginx, MySQL, воркер очереди, планировщик, Mailpit — одной командой |
+| **Фронтенд** | Vue 3 SPA, Vue Router, Pinia, Axios, Tailwind CSS, Vite |
 
 ---
 
-## Architecture Overview
+## Архитектура
 
 ```
 ┌─────────────┐   HTTP   ┌──────────┐
-│   Browser   │─────────▶│  Nginx   │
+│   Браузер   │─────────▶│  Nginx   │
 └─────────────┘          └────┬─────┘
                               │ FastCGI
-                         ┌────▼──────────┐
-                         │  PHP-FPM app  │
-                         │  Controllers  │
-                         │  Services     │
-                         └────┬──────────┘
+                         ┌────▼──────────────────┐
+                         │  PHP-FPM (Laravel)     │
+                         │  API Controllers       │
+                         │  Services / DTOs       │
+                         └────┬──────────────────┘
                               │
               ┌───────────────┼───────────────┐
               │               │               │
-        ┌─────▼──────┐ ┌──────▼──────┐ ┌─────▼──────┐
-        │   MySQL     │ │   Queue DB  │ │  Scheduler  │
-        │  (domains,  │ │  (jobs)     │ │  (every 1m) │
-        │  check_logs)│ └──────┬──────┘ └─────┬───────┘
+        ┌─────▼──────┐ ┌──────▼──────┐ ┌─────▼───────┐
+        │    MySQL    │ │  Очередь    │ │ Планировщик │
+        │  domains    │ │  (jobs)     │ │  каждую 1м  │
+        │  check_logs │ └──────┬──────┘ └─────┬───────┘
         └─────────────┘        │               │
                          ┌─────▼───────────────▼──┐
-                         │     Queue Worker         │
+                         │      Воркер очереди      │
                          │   CheckDomainJob         │
                          │   DomainMonitorService   │
                          │   DomainCheckService     │
                          └──────────────────────────┘
 ```
 
-### Key design decisions
+### Структура модулей
 
-- **Service layer** (`DomainCheckService`, `DomainMonitorService`) keeps business logic out of controllers and jobs.
-- **DTO** (`CheckResult`) is an immutable value object — no mutable state passes between layers.
-- **Policy** (`DomainPolicy`) enforces ownership at the framework level, not scattered in controllers.
-- **Unique jobs** (`uniqueId()`) prevent duplicate concurrent checks for the same domain.
-- **Status-change notifications** — alerts fire only when transitioning to "down", not on every failed check.
-- **Scope `dueForCheck`** — single place that encodes the scheduling logic, reused by command and tests.
+```
+app/Modules/
+├── Auth/           Контроллеры, Requests, маршруты
+├── Dashboard/      Контроллер, маршруты
+├── Domain/         Контроллер, Модель, Policy, Requests, ServiceProvider, маршруты
+└── Monitoring/     Команда, DTO, Job, Модель, Уведомление, Сервисы, ServiceProvider
+```
+
+### Ключевые архитектурные решения
+
+| Решение | Обоснование |
+|---|---|
+| **Сервисный слой** | `DomainCheckService`, `DomainMonitorService` — бизнес-логика вне контроллеров и джобов |
+| **DTO** `CheckResult` | Иммутабельный объект-значение; строгая типизация между слоями |
+| **Policy** `DomainPolicy` | Проверка владения ресурсом на уровне фреймворка |
+| **Unique job** | `uniqueId()` предотвращает параллельные дублирующиеся задачи для одного домена |
+| **Scope** `dueForCheck()` | Единственное место логики расписания — переиспользуется в команде и тестах |
+| **Уведомление только при смене статуса** | Нет спама при каждой неудачной проверке |
+| **Session auth (Sanctum SPA)** | Без JWT — нет токенов в localStorage, нет XSS-уязвимости |
+| **`useFormErrors` composable** | Единый контракт извлечения Laravel 422 ошибок по всем формам |
 
 ---
 
-## Quick Start (Docker)
+## Быстрый старт (Docker)
 
 ```bash
-# 1. Clone and configure
+# 1. Клонировать и настроить
 git clone <repo-url> domain-monitor && cd domain-monitor
 cp .env.example .env
 
-# 2. Start all services
+# 2. Запустить все сервисы
 docker compose up -d --build
 
-# 3. First-time setup
+# 3. Первоначальная настройка
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
+docker compose exec app npm install && npm run build
 
-# 4. Open in browser
+# 4. Открыть в браузере
 open http://localhost:8080
 
-# Login: admin@example.com / password
+# Логин: admin@example.com / password
 ```
 
-**Mailpit** (email preview): http://localhost:8025
+**Mailpit** (предпросмотр писем): http://localhost:8025
 
 ---
 
-## Manual Setup (without Docker)
+## Запуск без Docker
 
 ```bash
 composer install
 cp .env.example .env
-# Edit .env: set DB_*, MAIL_*, QUEUE_CONNECTION=database
+# Заполнить .env: DB_*, MAIL_*, QUEUE_CONNECTION=database
 
 php artisan key:generate
 php artisan migrate --seed
 
-# Run all three in separate terminals:
-php artisan serve                        # Web server
-php artisan queue:work                   # Job worker
-php artisan schedule:work                # Scheduler (dev)
+npm install
+npm run dev   # Vite dev server с HMR
+
+# В отдельных терминалах:
+php artisan serve           # Веб-сервер
+php artisan queue:work       # Воркер задач
+php artisan schedule:work    # Планировщик (dev-режим)
 ```
 
 ---
 
-## Artisan Commands
+## Artisan-команды
 
 ```bash
-# Dispatch checks for all due domains
+# Поставить в очередь проверки всех доменов с наступившим временем
 php artisan domains:check
 
-# Force-check a specific domain
+# Принудительная проверка конкретного домена
 php artisan domains:check --domain-id=1
-
-# Manually process jobs (alternative to daemon)
-php artisan queue:work --once
 ```
 
 ---
 
-## Project Structure
+## Структура фронтенда
 
 ```
-app/
-├── Console/Commands/
-│   └── CheckDomains.php          # Dispatches jobs for due domains
-├── DTOs/
-│   └── CheckResult.php           # Immutable result value object
-├── Http/
-│   ├── Controllers/
-│   │   ├── Auth/                 # Login, register, logout
-│   │   ├── DashboardController   # Overview + stats
-│   │   └── DomainController      # Full CRUD + check-now
-│   └── Requests/                 # Form validation
-├── Jobs/
-│   └── CheckDomainJob.php        # Queued, unique, retryable
-├── Models/
-│   ├── Domain.php                # Scopes: active(), dueForCheck()
-│   └── CheckLog.php
-├── Notifications/
-│   └── DomainStatusChanged.php   # Queued mail notification
-├── Policies/
-│   └── DomainPolicy.php          # Ownership enforcement
-└── Services/
-    ├── DomainCheckService.php    # HTTP check via Guzzle
-    └── DomainMonitorService.php  # Orchestrates check → log → notify
+resources/js/
+├── api/          client.js (Axios), auth.js, domains.js, dashboard.js
+├── stores/       auth.js (Pinia), flash.js (тосты)
+├── router/       index.js (ленивые маршруты + beforeEach-guard)
+├── composables/  useFormErrors.js (Laravel 422 → реактивные ошибки)
+├── utils/        date.js (diffForHumans + formatDatetime через Intl API)
+├── components/   AppLayout, GuestLayout, DomainForm, StatusBadge,
+│                 FlashMessages, Pagination, FormField
+└── views/        auth/Вход+Регистрация, Главная, domains/Список+Создание+Редактирование+Детали
 ```
 
 ---
 
-## Database Schema
+## Схема базы данных
 
 ```sql
 domains
-  id, user_id (FK), name, url,
-  check_interval (minutes), request_timeout (seconds), check_method (HEAD|GET),
+  id, user_id, name, url,
+  check_interval (мин.), request_timeout (с), check_method (HEAD|GET),
   is_active, status (unknown|up|down), last_checked_at,
   notify_on_failure, notification_email,
   created_at, updated_at
 
 check_logs
-  id, domain_id (FK),
+  id, domain_id,
   checked_at, is_up, http_code, response_time_ms, error_message
 ```
 
-Indexes on `(is_active, last_checked_at)` and `(domain_id, checked_at)` make scheduling and history queries efficient at scale.
-
 ---
 
-## Testing
+## Переменные окружения
 
-```bash
-php artisan test
-```
-
-Tests use SQLite in-memory and mock `DomainCheckService` so no real HTTP calls are made.
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
+| Переменная | По умолчанию | Описание |
 |---|---|---|
-| `QUEUE_CONNECTION` | `database` | Use `redis` for production |
-| `MAIL_MAILER` | `smtp` | Set to `log` during development |
-| `DB_CONNECTION` | `mysql` | Also supports `pgsql` |
-| `CHECK_INTERVAL_DEFAULT` | `5` | Default check interval (minutes) |
-| `CHECK_TIMEOUT_DEFAULT` | `10` | Default request timeout (seconds) |
+| `QUEUE_CONNECTION` | `database` | В продакшне рекомендуется `redis` |
+| `MAIL_MAILER` | `smtp` | В разработке — `log` |
+| `DB_CONNECTION` | `mysql` | Также поддерживается `pgsql` |
+| `SANCTUM_STATEFUL_DOMAINS` | `localhost` | Домены SPA для Sanctum |

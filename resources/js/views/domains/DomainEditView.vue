@@ -8,7 +8,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                     </svg>
                 </RouterLink>
-                <h1 class="text-2xl font-bold text-gray-900">Edit Domain</h1>
+                <h1 class="text-2xl font-bold text-gray-900">Редактировать домен</h1>
             </div>
 
             <div v-if="fetching" class="card p-6 space-y-4">
@@ -20,7 +20,7 @@
                     :initial="initial"
                     :errors="errors"
                     :loading="loading"
-                    submit-label="Save Changes"
+                    submit-label="Сохранить изменения"
                     @submit="handleSubmit"
                     @cancel="router.push({ name: 'domains.show', params: { id: domainId } })"
                 />
@@ -54,7 +54,7 @@ onMounted(async () => {
         const { data } = await domainsApi.get(domainId)
         initial.value = data.data
     } catch {
-        flash.error('Domain not found.')
+        flash.error('Домен не найден.')
         router.push({ name: 'domains.index' })
     } finally {
         fetching.value = false
@@ -66,7 +66,7 @@ async function handleSubmit(form) {
     loading.value = true
     try {
         await domainsApi.update(domainId, form)
-        flash.success('Domain updated.')
+        flash.success('Домен успешно обновлён.')
         router.push({ name: 'domains.show', params: { id: domainId } })
     } catch (err) {
         handleError(err)

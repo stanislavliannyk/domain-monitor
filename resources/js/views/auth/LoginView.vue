@@ -1,9 +1,9 @@
 <template>
     <GuestLayout>
-        <template #subtitle>Sign in to your account</template>
+        <template #subtitle>Войдите в свою учётную запись</template>
 
         <form @submit.prevent="submit" class="space-y-5">
-            <FormField id="email" label="Email address" :error="errors.email?.[0]" required>
+            <FormField id="email" label="Email" :error="errors.email?.[0]" required>
                 <input
                     id="email"
                     v-model="form.email"
@@ -15,7 +15,7 @@
                 />
             </FormField>
 
-            <FormField id="password" label="Password" :error="errors.password?.[0]" required>
+            <FormField id="password" label="Пароль" :error="errors.password?.[0]" required>
                 <input
                     id="password"
                     v-model="form.password"
@@ -29,19 +29,19 @@
             <div class="flex items-center gap-2">
                 <input id="remember" v-model="form.remember" type="checkbox"
                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <label for="remember" class="text-sm text-gray-600 cursor-pointer">Remember me</label>
+                <label for="remember" class="text-sm text-gray-600 cursor-pointer">Запомнить меня</label>
             </div>
 
             <button type="submit" :disabled="loading" class="btn-primary w-full">
-                <span v-if="loading">Signing in…</span>
-                <span v-else>Sign in</span>
+                <span v-if="loading">Вход…</span>
+                <span v-else>Войти</span>
             </button>
         </form>
 
         <p class="mt-6 text-center text-sm text-gray-500">
-            No account?
+            Нет учётной записи?
             <RouterLink :to="{ name: 'register' }" class="font-medium text-blue-600 hover:text-blue-500">
-                Register
+                Зарегистрироваться
             </RouterLink>
         </p>
     </GuestLayout>
@@ -76,7 +76,7 @@ async function submit() {
     } catch (err) {
         handleError(err)
         if (!Object.keys(errors.value).length) {
-            flash.error('Login failed. Please try again.')
+            flash.error('Ошибка входа. Попробуйте снова.')
         }
     } finally {
         loading.value = false

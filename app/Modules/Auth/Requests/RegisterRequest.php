@@ -20,4 +20,16 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required'      => 'Поле имя обязательно.',
+            'email.required'     => 'Поле email обязательно.',
+            'email.email'        => 'Введите корректный адрес электронной почты.',
+            'email.unique'       => 'Пользователь с таким email уже зарегистрирован.',
+            'password.required'  => 'Поле пароль обязательно.',
+            'password.confirmed' => 'Пароли не совпадают.',
+        ];
+    }
 }
