@@ -95,8 +95,8 @@ services:
     container_name: dm_mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025"   # Web UI
-      - "1025:1025"   # SMTP
+      - "8026:8025"   # Web UI  →  http://localhost:8026
+      - "1026:1025"   # SMTP
     networks:
       - dm_network
 
