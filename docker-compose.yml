@@ -11,6 +11,7 @@ services:
       APP_ENV: local
     volumes:
       - .:/var/www/html:cached
+      - dm_vendor:/var/www/html/vendor          # vendor из образа, не с хоста
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     depends_on:
       mysql:
@@ -58,9 +59,6 @@ services:
       - dm_network
 
   # ── Инициализация (выполняется один раз при первом запуске) ──────────────────
-  # Создаёт .env, генерирует APP_KEY, запускает миграции.
-  # После завершения container_name: dm_setup выходит с кодом 0,
-  # и Docker Compose переходит к запуску app/queue/scheduler.
   setup:
     build:
       context: .
@@ -69,6 +67,7 @@ services:
     restart: "no"
     volumes:
       - .:/var/www/html:cached
+      - dm_vendor:/var/www/html/vendor          # тот же том → vendor уже есть
     depends_on:
       mysql:
         condition: service_healthy
@@ -76,12 +75,16 @@ services:
       sh -c "
         if [ ! -f .env ]; then
           cp .env.example .env
-          echo 'APP_URL=http://localhost:${APP_PORT:-8080}' >> .env
-          php artisan key:generate --ansi
-          echo '.env создан и APP_KEY сгенерирован'
-        else
-          echo '.env уже существует, пропускаем генерацию ключа'
+          echo 'Создан .env из .env.example'
         fi
+
+        if ! grep -q '^APP_KEY=.\+' .env; then
+          php artisan key:generate --ansi
+          echo 'APP_KEY сгенерирован'
+        else
+          echo 'APP_KEY уже задан'
+        fi
+
         php artisan migrate --force --ansi
         echo 'Инициализация завершена'
       "
@@ -98,6 +101,7 @@ services:
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     volumes:
       - .:/var/www/html:cached
+      - dm_vendor:/var/www/html/vendor
     depends_on:
       mysql:
         condition: service_healthy
@@ -117,6 +121,7 @@ services:
       sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
     volumes:
       - .:/var/www/html:cached
+      - dm_vendor:/var/www/html/vendor
     depends_on:
       mysql:
         condition: service_healthy
@@ -125,19 +130,20 @@ services:
     networks:
       - dm_network
 
-  # ── Mailpit (локальный SMTP + веб-интерфейс для просмотра писем) ─────────────
+  # ── Mailpit (локальный SMTP + веб-интерфейс) ─────────────────────────────────
   mailpit:
     image: axllent/mailpit:latest
     container_name: dm_mailpit
     restart: unless-stopped
     ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"    # Веб-интерфейс
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"  # SMTP
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
     networks:
       - dm_network
 
 volumes:
   dm_mysql_data:
+  dm_vendor:      # vendor PHP-зависимостей — заполняется из образа при первом старте
 
 networks:
   dm_network:
