@@ -15,6 +15,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      setup:
+        condition: service_completed_successfully
     networks:
       - dm_network
 
@@ -55,6 +57,37 @@ services:
     networks:
       - dm_network
 
+  # ── Инициализация (выполняется один раз при первом запуске) ──────────────────
+  # Создаёт .env, генерирует APP_KEY, запускает миграции.
+  # После завершения container_name: dm_setup выходит с кодом 0,
+  # и Docker Compose переходит к запуску app/queue/scheduler.
+  setup:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: dm_setup
+    restart: "no"
+    volumes:
+      - .:/var/www/html:cached
+    depends_on:
+      mysql:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+        if [ ! -f .env ]; then
+          cp .env.example .env
+          echo 'APP_URL=http://localhost:${APP_PORT:-8080}' >> .env
+          php artisan key:generate --ansi
+          echo '.env создан и APP_KEY сгенерирован'
+        else
+          echo '.env уже существует, пропускаем генерацию ключа'
+        fi
+        php artisan migrate --force --ansi
+        echo 'Инициализация завершена'
+      "
+    networks:
+      - dm_network
+
   # ── Queue worker ─────────────────────────────────────────────────────────────
   queue:
     build:
@@ -68,6 +101,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      setup:
+        condition: service_completed_successfully
     networks:
       - dm_network
 
@@ -85,6 +120,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      setup:
+        condition: service_completed_successfully
     networks:
       - dm_network
 
