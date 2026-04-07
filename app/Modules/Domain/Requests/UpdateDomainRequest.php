@@ -28,7 +28,7 @@ class UpdateDomainRequest extends FormRequest
 
             $ip = gethostbyname($host);
 
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            if ($ip !== $host && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 $v->errors()->add('url', 'URL должен указывать на публичный хост, а не на внутренний адрес.');
             }
         });
