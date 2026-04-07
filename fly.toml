@@ -2,7 +2,6 @@ app = 'domain-monitor'
 primary_region = 'ams'
 
 [build]
-  dockerfile = 'Dockerfile.fly'
 
 [deploy]
   release_command = 'php artisan migrate --force'
