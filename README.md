@@ -130,6 +130,8 @@ resources/js/
 | **Scope `dueForCheck()`** | Единственное место логики расписания — переиспользуется в команде |
 | **Уведомление только при смене статуса** | Нет спама при каждой неудачной проверке |
 | **Session auth (Sanctum SPA)** | Без JWT — нет токенов в localStorage, нет XSS-уязвимости |
+| **SSRF-защита** | `gethostbyname()` + `FILTER_FLAG_NO_PRIV_RANGE` блокирует приватные IP при добавлении домена |
+| **`APP_DEBUG=false` в продакшне** | Stack trace не утекает в HTTP-ответы |
 
 ---
 
@@ -163,35 +165,36 @@ open http://localhost:8080
 
 ## Деплой на Fly.io
 
+> **Важно:** деплой выполняется только через CLI (`fly deploy`). Веб-интерфейс Fly.io игнорирует `Dockerfile` и использует собственный buildpack, который не подходит для этого проекта.
+
 ### Первый деплой
 
 ```bash
 # 1. Установить Fly CLI и войти
+curl -L https://fly.io/install.sh | sh
 fly auth login
 
 # 2. Создать приложение (fly.toml уже есть в репозитории)
 fly launch --no-deploy
 
-# 3. Создать managed Postgres и привязать к приложению
-fly postgres create --name domain-monitor-db
-fly postgres attach domain-monitor-db
-# ↑ автоматически добавит DATABASE_URL в секреты приложения
+# 3. Подключить внешний Postgres (например, Neon — бесплатно)
+#    Создать проект на neon.tech, скопировать строку подключения
+fly secrets set DB_HOST=ep-xxx.neon.tech DB_DATABASE=neondb DB_USERNAME=user DB_PASSWORD=pass --app domain-monitor
 
-# 4. Установить обязательные секреты
-fly secrets set \
-  APP_KEY="$(php artisan key:generate --show)" \
-  APP_URL="https://<your-app>.fly.dev" \
-  SANCTUM_STATEFUL_DOMAINS="<your-app>.fly.dev" \
-  MAIL_MAILER=log   # или smtp с реальными данными
+# 4. Установить обязательные секреты (одной строкой)
+fly secrets set APP_KEY="base64:$(openssl rand -base64 32)" APP_URL="https://domain-monitor.fly.dev" SANCTUM_STATEFUL_DOMAINS="domain-monitor.fly.dev" MAIL_MAILER=log --app domain-monitor
 
 # 5. Задеплоить
-fly deploy
+fly deploy --app domain-monitor
+
+# 6. Наполнить базу тестовыми данными (опционально)
+fly ssh console --app domain-monitor -C "php artisan db:seed --force"
 ```
 
 ### Последующие деплои
 
 ```bash
-fly deploy
+fly deploy --app domain-monitor
 ```
 
 Миграции запускаются автоматически через `release_command` перед сменой трафика.
@@ -204,11 +207,12 @@ fly deploy
 | `worker` | `queue:work` | 256 MB |
 | `scheduler` | `schedule:run` каждую минуту | 256 MB |
 
+Все три процесса запускаются автоматически при деплое согласно `fly.toml`.
+
 ### Масштабирование воркеров
 
 ```bash
-# Запустить 2 воркера
-fly scale count worker=2
+fly scale count worker=2 --app domain-monitor
 ```
 
 ---
