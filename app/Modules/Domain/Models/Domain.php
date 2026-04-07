@@ -50,7 +50,7 @@ class Domain extends Model
     {
         $query->active()->where(function (Builder $q) {
             $q->whereNull('last_checked_at')
-              ->orWhereRaw('DATE_ADD(last_checked_at, INTERVAL check_interval MINUTE) <= NOW()');
+              ->orWhereRaw("last_checked_at + (check_interval * interval '1 minute') <= NOW()");
         });
     }
 

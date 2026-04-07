@@ -12,7 +12,7 @@ services:
       - .:/var/www/html:cached
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       setup:
         condition: service_completed_successfully
@@ -33,21 +33,20 @@ services:
     networks:
       - dm_network
 
-  mysql:
-    image: mysql:8.3
-    container_name: dm_mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: dm_postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE:      domain_monitor
-      MYSQL_USER:          domain_monitor
-      MYSQL_PASSWORD:      secret
-      MYSQL_ROOT_PASSWORD: root_secret
+      POSTGRES_DB:       domain_monitor
+      POSTGRES_USER:     domain_monitor
+      POSTGRES_PASSWORD: secret
     volumes:
-      - dm_mysql_data:/var/lib/mysql
+      - dm_postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_EXTERNAL_PORT:-33060}:3306"
+      - "${DB_EXTERNAL_PORT:-54320}:5432"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "domain_monitor", "-psecret"]
+      test: ["CMD-SHELL", "pg_isready -U domain_monitor -d domain_monitor"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -63,7 +62,7 @@ services:
     volumes:
       - .:/var/www/html:cached
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     command: >
       sh -c "
@@ -97,7 +96,7 @@ services:
     volumes:
       - .:/var/www/html:cached
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       setup:
         condition: service_completed_successfully
@@ -115,7 +114,7 @@ services:
     volumes:
       - .:/var/www/html:cached
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       setup:
         condition: service_completed_successfully
@@ -133,7 +132,7 @@ services:
       - dm_network
 
 volumes:
-  dm_mysql_data:
+  dm_postgres_data:
 
 networks:
   dm_network:

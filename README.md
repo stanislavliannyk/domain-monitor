@@ -14,7 +14,7 @@
 | **История** | Каждая проверка сохраняется: дата, HTTP-код, время ответа, ошибка |
 | **Статистика** | Доступность за 7 дней (%), среднее время ответа |
 | **Уведомления** | Email при переходе домена в статус «недоступен» (только при смене статуса) |
-| **Docker** | app, Nginx, MySQL, воркер очереди, планировщик, Mailpit — одной командой |
+| **Docker** | app, Nginx, PostgreSQL, воркер очереди, планировщик, Mailpit — одной командой |
 | **Фронтенд** | Vue 3 SPA, Vue Router, Pinia, Axios, Tailwind CSS, Vite |
 
 ---
@@ -35,7 +35,7 @@
               ┌───────────────┼───────────────┐
               │               │               │
         ┌─────▼──────┐ ┌──────▼──────┐ ┌─────▼───────┐
-        │    MySQL    │ │  Очередь    │ │ Планировщик │
+        │  PostgreSQL  │ │  Очередь    │ │ Планировщик │
         │  domains    │ │  (jobs)     │ │  каждые 1м  │
         │  check_logs │ └──────┬──────┘ └─────┬───────┘
         └─────────────┘        │               │
@@ -146,15 +146,70 @@ docker compose up -d --build
 # 3. Собрать фронтенд
 npm install && npm run build
 
-# 4. Открыть в браузере
-open http://localhost:8080
+# 4. Наполнить базу тестовыми данными (опционально)
+docker compose exec app php artisan db:seed
 # Логин: admin@example.com / password
+
+# 5. Открыть в браузере
+open http://localhost:8080
 ```
 
 > Если порт 8080 занят — переопределите переменную: `APP_PORT=8090 docker compose up -d`
 
-**Mailpit** (предпросмотр писем): http://localhost:8025
-> Если порт занят другим сервисом — укажите свой: `MAILPIT_UI_PORT=9025 docker compose up -d`
+**Mailpit** (предпросмотр писем): http://localhost:9025
+> Если порт занят — укажите свой: `MAILPIT_UI_PORT=9030 docker compose up -d`
+
+---
+
+## Деплой на Fly.io
+
+### Первый деплой
+
+```bash
+# 1. Установить Fly CLI и войти
+fly auth login
+
+# 2. Создать приложение (fly.toml уже есть в репозитории)
+fly launch --no-deploy
+
+# 3. Создать managed Postgres и привязать к приложению
+fly postgres create --name domain-monitor-db
+fly postgres attach domain-monitor-db
+# ↑ автоматически добавит DATABASE_URL в секреты приложения
+
+# 4. Установить обязательные секреты
+fly secrets set \
+  APP_KEY="$(php artisan key:generate --show)" \
+  APP_URL="https://<your-app>.fly.dev" \
+  SANCTUM_STATEFUL_DOMAINS="<your-app>.fly.dev" \
+  MAIL_MAILER=log   # или smtp с реальными данными
+
+# 5. Задеплоить
+fly deploy
+```
+
+### Последующие деплои
+
+```bash
+fly deploy
+```
+
+Миграции запускаются автоматически через `release_command` перед сменой трафика.
+
+### Процессы на Fly.io
+
+| Процесс | Описание | Память |
+|---|---|---|
+| `web` | Nginx + PHP-FPM | 512 MB |
+| `worker` | `queue:work` | 256 MB |
+| `scheduler` | `schedule:run` каждую минуту | 256 MB |
+
+### Масштабирование воркеров
+
+```bash
+# Запустить 2 воркера
+fly scale count worker=2
+```
 
 ---
 
@@ -163,7 +218,7 @@ open http://localhost:8080
 ```bash
 composer install
 cp .env.example .env
-# Заполнить .env: DB_*, MAIL_*, QUEUE_CONNECTION=database
+# Заполнить .env: DB_* (PostgreSQL), MAIL_*, QUEUE_CONNECTION=database
 
 php artisan key:generate
 php artisan migrate --seed
@@ -213,9 +268,9 @@ check_logs
 | Переменная | По умолчанию | Описание |
 |---|---|---|
 | `APP_PORT` | `8080` | Внешний порт Nginx |
-| `DB_EXTERNAL_PORT` | `33060` | Внешний порт MySQL |
-| `MAILPIT_UI_PORT` | `8025` | Веб-интерфейс Mailpit |
-| `MAILPIT_SMTP_PORT` | `1025` | SMTP-порт Mailpit |
+| `DB_EXTERNAL_PORT` | `54320` | Внешний порт PostgreSQL |
+| `MAILPIT_UI_PORT` | `9025` | Веб-интерфейс Mailpit |
+| `MAILPIT_SMTP_PORT` | `9001` | SMTP-порт Mailpit |
 | `QUEUE_CONNECTION` | `database` | В продакшне рекомендуется `redis` |
 | `MAIL_MAILER` | `smtp` | В разработке можно использовать `log` |
 | `SANCTUM_STATEFUL_DOMAINS` | `localhost` | Домены SPA для Sanctum |

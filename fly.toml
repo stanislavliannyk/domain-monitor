@@ -1,0 +1,47 @@
+app = 'domain-monitor'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile.fly'
+
+[deploy]
+  release_command = 'php artisan migrate --force'
+
+[env]
+  APP_ENV = 'production'
+  APP_DEBUG = 'false'
+  LOG_CHANNEL = 'stderr'
+  LOG_LEVEL = 'warning'
+  CACHE_STORE = 'database'
+  SESSION_DRIVER = 'database'
+  QUEUE_CONNECTION = 'database'
+
+[processes]
+  web       = '/usr/local/bin/start-web.sh'
+  worker    = 'php artisan queue:work --sleep=3 --tries=3 --max-time=3600'
+  scheduler = "sh -c 'while true; do php artisan schedule:run --no-interaction; sleep 60; done'"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['web']
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 200
+    soft_limit = 150
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  processes = ['web']
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  processes = ['worker', 'scheduler']

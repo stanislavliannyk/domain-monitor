@@ -4,7 +4,7 @@ RUN apk add --no-cache \
     bash \
     curl \
     git \
-    libpng-dev \
+    libpq-dev \
     libzip-dev \
     oniguruma-dev \
     zip \
@@ -12,7 +12,8 @@ RUN apk add --no-cache \
 
 RUN docker-php-ext-install \
     pdo \
-    pdo_mysql \
+    pdo_pgsql \
+    pgsql \
     mbstring \
     zip \
     bcmath \
