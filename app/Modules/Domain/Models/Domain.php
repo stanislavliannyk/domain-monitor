@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Domain extends Model
 {
     protected $fillable = [
-        'user_id',
         'name',
         'url',
         'check_interval',

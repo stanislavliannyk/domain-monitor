@@ -18,6 +18,8 @@ class DomainCheckService
         $client = new Client([
             'timeout'         => $domain->request_timeout,
             'connect_timeout' => min(5, $domain->request_timeout),
+            // SSL verification is intentionally disabled: monitoring tools must detect
+            // sites with expired/invalid certificates as "up" (connection-level reachability).
             'verify'          => false,
             'allow_redirects' => ['max' => 5, 'strict' => false],
             'http_errors'     => false,

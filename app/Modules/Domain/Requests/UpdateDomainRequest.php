@@ -4,12 +4,34 @@ namespace App\Modules\Domain\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateDomainRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user()->can('update', $this->route('domain'));
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $url = $this->input('url');
+            if (! $url) {
+                return;
+            }
+
+            $host = parse_url($url, PHP_URL_HOST);
+            if (! $host) {
+                return;
+            }
+
+            $ip = gethostbyname($host);
+
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                $v->errors()->add('url', 'URL должен указывать на публичный хост, а не на внутренний адрес.');
+            }
+        });
     }
 
     public function rules(): array

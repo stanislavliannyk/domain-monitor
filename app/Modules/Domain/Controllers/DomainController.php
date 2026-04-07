@@ -9,6 +9,7 @@ use App\Modules\Domain\Requests\UpdateDomainRequest;
 use App\Modules\Domain\Services\DomainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class DomainController extends Controller
 {
@@ -95,7 +96,7 @@ class DomainController extends Controller
         return response()->json(['message' => 'Проверка поставлена в очередь.']);
     }
 
-    public function logs(Domain $domain, Request $request): JsonResponse
+    public function logs(Domain $domain): JsonResponse
     {
         $this->authorize('view', $domain);
 
